@@ -5,7 +5,7 @@ import * as iam from 'aws-cdk-lib/aws-iam';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as yaml from 'js-yaml';
-import { KubectlV28Layer } from '@aws-cdk/lambda-layer-kubectl-v28'; // ✅ Import added
+import { KubectlV28Layer } from '@aws-cdk/lambda-layer-kubectl-v28';
 
 export class EksIstioStack extends Stack {
   constructor(scope: cdk.App, id: string, props?: StackProps) {
@@ -19,15 +19,15 @@ export class EksIstioStack extends Stack {
     adminRole.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName('AmazonEKSClusterPolicy'));
     adminRole.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName('AmazonEKSWorkerNodePolicy'));
 
-    // Add KubectlLayer required for CDK's Lambda-backed kubectl
+    // Add KubectlLayer for CDK Lambda-backed kubectl
     const kubectlLayer = new KubectlV28Layer(this, 'KubectlLayer');
 
-    // Create EKS Cluster with kubectlLayer
+    // Create EKS Cluster
     const cluster = new eks.Cluster(this, 'EksCluster', {
       version: eks.KubernetesVersion.V1_28,
       defaultCapacity: 2,
       mastersRole: adminRole,
-      kubectlLayer: kubectlLayer, // ✅ Required in CDK v2
+      kubectlLayer: kubectlLayer,
     });
 
     // Create Istio namespace
@@ -37,7 +37,7 @@ export class EksIstioStack extends Stack {
       metadata: { name: 'istio-system' },
     });
 
-    // Install Istio components using Helm charts
+    // Install Istio components
     const istioBase = cluster.addHelmChart('IstioBase', {
       chart: 'base',
       repository: 'https://istio-release.storage.googleapis.com/charts',
@@ -64,48 +64,47 @@ export class EksIstioStack extends Stack {
       namespace: 'istio-system',
     });
 
-    // Ensure correct deployment order for Istio charts
+    // Set Istio chart deployment order
     istioBase.node.addDependency(istioNamespace);
     istiod.node.addDependency(istioBase);
     istioIngress.node.addDependency(istiod);
 
-    // Load and apply all YAML files from the same 'manifests' folder
-    const manifestsFolderPath = path.join(__dirname, '..', 'manifests');
+    // Load all manifests from the 'manifests' folder
+    const manifestsPath = path.join(__dirname, '..', 'manifests');
 
-    const demoV1Path = path.join(manifestsFolderPath, 'demo-v1.yaml');
-    const demoV2Path = path.join(manifestsFolderPath, 'demo-v2.yaml');
-    const destinationRulePath = path.join(manifestsFolderPath, 'destination-rule.yaml');
-    const virtualServicePath = path.join(manifestsFolderPath, 'virtual-service.yaml');
-    const namespacePath = path.join(manifestsFolderPath, 'namespace.yaml');
-    const gatewayPath = path.join(manifestsFolderPath, 'gateway.yaml');
+    const loadManifest = (filename: string) => {
+      const fullPath = path.join(manifestsPath, filename);
+      return yaml.loadAll(fs.readFileSync(fullPath, 'utf8')) as Record<string, any>[];
+    };
 
-    // Load each YAML file
-    const demoV1Manifest = yaml.loadAll(fs.readFileSync(demoV1Path, 'utf8')) as Record<string, any>[];
-    const demoV2Manifest = yaml.loadAll(fs.readFileSync(demoV2Path, 'utf8')) as Record<string, any>[];
-    const destinationRuleManifest = yaml.loadAll(fs.readFileSync(destinationRulePath, 'utf8')) as Record<string, any>[];
-    const virtualServiceManifest = yaml.loadAll(fs.readFileSync(virtualServicePath, 'utf8')) as Record<string, any>[];
-    const namespaceManifest = yaml.loadAll(fs.readFileSync(namespacePath, 'utf8')) as Record<string, any>[];
-    const gatewayManifest = yaml.loadAll(fs.readFileSync(gatewayPath, 'utf8')) as Record<string, any>[];
+    const namespaceManifest = loadManifest('namespace.yaml');
+    const demoV1Manifest = loadManifest('demo-v1.yaml');
+    const demoV2Manifest = loadManifest('demo-v2.yaml');
+    const destinationRuleManifest = loadManifest('destination-rule.yaml');
+    const virtualServiceManifest = loadManifest('virtual-service.yaml');
+    const gatewayManifest = loadManifest('gateway.yaml');
 
-    // Deploy application version 1 (demo-v1.yaml)
+    // Deploy 'demo' namespace from YAML
+    const demoNamespace = cluster.addManifest('DemoNamespace', ...namespaceManifest);
+
+    // Deploy app versions
     const demoAppV1 = cluster.addManifest('DemoAppV1', ...demoV1Manifest);
-
-    // Deploy application version 2 (demo-v2.yaml)
     const demoAppV2 = cluster.addManifest('DemoAppV2', ...demoV2Manifest);
 
-    // Deploy Istio routing and other traffic configurations
+    // Set app dependencies on namespace
+    demoAppV1.node.addDependency(demoNamespace);
+    demoAppV2.node.addDependency(demoNamespace);
+
+    // Deploy traffic control manifests
     const destinationRule = cluster.addManifest('DestinationRule', ...destinationRuleManifest);
     const virtualService = cluster.addManifest('VirtualService', ...virtualServiceManifest);
-    const namespace = cluster.addManifest('Namespace', ...namespaceManifest);
     const gateway = cluster.addManifest('Gateway', ...gatewayManifest);
 
-    // Ensure traffic routing resources are deployed after app versions
+    // Ensure traffic configs deploy after app versions
     destinationRule.node.addDependency(demoAppV1);
     destinationRule.node.addDependency(demoAppV2);
     virtualService.node.addDependency(demoAppV1);
     virtualService.node.addDependency(demoAppV2);
-    namespace.node.addDependency(demoAppV1);
-    namespace.node.addDependency(demoAppV2);
     gateway.node.addDependency(demoAppV1);
     gateway.node.addDependency(demoAppV2);
   }
