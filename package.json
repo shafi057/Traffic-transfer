@@ -13,12 +13,13 @@
     "destroy": "cdk destroy"
   },
   "devDependencies": {
+    "@types/jest": "^29.5.14",
     "@types/js-yaml": "^4.0.9",
     "@types/node": "^20.11.30",
     "typescript": "^5.3.3"
   },
   "dependencies": {
-    "@aws-cdk/aws-eks": "^1.121.0",
+    "@aws-cdk/aws-eks": "^1.19.0",
     "@aws-cdk/aws-iam": "^1.19.0",
     "@aws-cdk/core": "^1.19.0",
     "@aws-cdk/lambda-layer-kubectl-v28": "^2.1.0",
