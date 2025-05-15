@@ -11,7 +11,6 @@ export class EksIstioStack extends Stack {
   constructor(scope: cdk.App, id: string, props?: StackProps) {
     super(scope, id, props);
 
-    // IAM Role for EKS Admin
     const adminRole = new iam.Role(this, 'EksAdminRole', {
       assumedBy: new iam.AccountRootPrincipal(),
     });
