@@ -21,7 +21,6 @@ export class EksIstioStack extends Stack {
     adminRole.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName('AmazonEKSServicePolicy'));
     adminRole.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName('AmazonEC2ContainerRegistryReadOnly'));
 
-
     // Add KubectlLayer for CDK Lambda-backed kubectl
     const kubectlLayer = new KubectlV28Layer(this, 'KubectlLayer');
 
@@ -33,6 +32,13 @@ export class EksIstioStack extends Stack {
       kubectlLayer: kubectlLayer,
     });
 
+    // Map the IAM adminRole to Kubernetes RBAC system:masters group
+    cluster.awsAuth.addRoleMapping(adminRole, {
+      groups: ['system:masters'],
+      // Optional: username can be customized if desired
+      // username: 'eks-admin-role',
+    });
+
     // Create Istio namespace
     const istioNamespace = cluster.addManifest('IstioNamespace', {
       apiVersion: 'v1',
@@ -40,7 +46,7 @@ export class EksIstioStack extends Stack {
       metadata: { name: 'istio-system' },
     });
 
-    // Install Istio components
+    // Install Istio Helm charts
     const istioBase = cluster.addHelmChart('IstioBase', {
       chart: 'base',
       repository: 'https://istio-release.storage.googleapis.com/charts',
@@ -67,7 +73,7 @@ export class EksIstioStack extends Stack {
       namespace: 'istio-system',
     });
 
-    // Set Istio chart deployment order
+    // Define Helm chart dependencies order
     istioBase.node.addDependency(istioNamespace);
     istiod.node.addDependency(istioBase);
     istioIngress.node.addDependency(istiod);
@@ -90,20 +96,18 @@ export class EksIstioStack extends Stack {
     // Deploy 'demo' namespace from YAML
     const demoNamespace = cluster.addManifest('DemoNamespace', ...namespaceManifest);
 
-    // Deploy app versions
+    // Deploy demo app versions
     const demoAppV1 = cluster.addManifest('DemoAppV1', ...demoV1Manifest);
     const demoAppV2 = cluster.addManifest('DemoAppV2', ...demoV2Manifest);
 
-    // Set app dependencies on namespace
     demoAppV1.node.addDependency(demoNamespace);
     demoAppV2.node.addDependency(demoNamespace);
 
-    // Deploy traffic control manifests
+    // Deploy traffic routing manifests
     const destinationRule = cluster.addManifest('DestinationRule', ...destinationRuleManifest);
     const virtualService = cluster.addManifest('VirtualService', ...virtualServiceManifest);
     const gateway = cluster.addManifest('Gateway', ...gatewayManifest);
 
-    // Ensure traffic configs deploy after app versions
     destinationRule.node.addDependency(demoAppV1);
     destinationRule.node.addDependency(demoAppV2);
     virtualService.node.addDependency(demoAppV1);
