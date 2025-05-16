@@ -17,7 +17,6 @@ export class EksIstioStack extends Stack {
     });
 
     adminRole.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName('AmazonEKSClusterPolicy'));
-    adminRole.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName('AmazonEKSWorkerNodePolicy'));
 
     // Add KubectlLayer for CDK Lambda-backed kubectl
     const kubectlLayer = new KubectlV28Layer(this, 'KubectlLayer');
