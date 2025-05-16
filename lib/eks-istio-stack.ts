@@ -18,8 +18,6 @@ export class EksIstioStack extends Stack {
 
     adminRole.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName('AmazonEKSClusterPolicy'));
     adminRole.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName('AmazonEKSWorkerNodePolicy'));
-    adminRole.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName('AmazonEKSServicePolicy'));
-    adminRole.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName('AmazonEC2ContainerRegistryReadOnly'));
 
     // Add KubectlLayer for CDK Lambda-backed kubectl
     const kubectlLayer = new KubectlV28Layer(this, 'KubectlLayer');
@@ -32,12 +30,9 @@ export class EksIstioStack extends Stack {
       kubectlLayer: kubectlLayer,
     });
 
-    // Map the IAM adminRole to Kubernetes RBAC system:masters group
     cluster.awsAuth.addRoleMapping(adminRole, {
-      groups: ['system:masters'],
-      // Optional: username can be customized if desired
-      // username: 'eks-admin-role',
-    });
+        groups: ['system:masters']
+      })
 
     // Create Istio namespace
     const istioNamespace = cluster.addManifest('IstioNamespace', {
