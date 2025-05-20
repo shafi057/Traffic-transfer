@@ -11,17 +11,14 @@ export class EksIstioStack extends Stack {
   constructor(scope: cdk.App, id: string, props?: StackProps) {
     super(scope, id, props);
 
-    // IAM Role for EKS Admin
     const adminRole = new iam.Role(this, 'EksAdminRole', {
       assumedBy: new iam.AccountRootPrincipal(),
     });
 
     adminRole.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName('AmazonEKSClusterPolicy'));
 
-    // Add KubectlLayer for CDK Lambda-backed kubectl
     const kubectlLayer = new KubectlV28Layer(this, 'KubectlLayer');
 
-    // Create EKS Cluster
     const cluster = new eks.Cluster(this, 'EksCluster', {
       version: eks.KubernetesVersion.V1_28,
       defaultCapacity: 2,
@@ -33,14 +30,12 @@ export class EksIstioStack extends Stack {
         groups: ['system:masters']
       })
 
-    // Create Istio namespace
     const istioNamespace = cluster.addManifest('IstioNamespace', {
       apiVersion: 'v1',
       kind: 'Namespace',
       metadata: { name: 'istio-system' },
     });
 
-    // Install Istio Helm charts
     const istioBase = cluster.addHelmChart('IstioBase', {
       chart: 'base',
       repository: 'https://istio-release.storage.googleapis.com/charts',
@@ -67,12 +62,10 @@ export class EksIstioStack extends Stack {
       namespace: 'istio-system',
     });
 
-    // Define Helm chart dependencies order
     istioBase.node.addDependency(istioNamespace);
     istiod.node.addDependency(istioBase);
     istioIngress.node.addDependency(istiod);
 
-    // Load all manifests from the 'manifests' folder
     const manifestsPath = path.join(__dirname, '..', 'manifests');
 
     const loadManifest = (filename: string) => {
@@ -87,17 +80,14 @@ export class EksIstioStack extends Stack {
     const virtualServiceManifest = loadManifest('virtual-service.yaml');
     const gatewayManifest = loadManifest('gateway.yaml');
 
-    // Deploy 'demo' namespace from YAML
     const demoNamespace = cluster.addManifest('DemoNamespace', ...namespaceManifest);
 
-    // Deploy demo app versions
     const demoAppV1 = cluster.addManifest('DemoAppV1', ...demoV1Manifest);
     const demoAppV2 = cluster.addManifest('DemoAppV2', ...demoV2Manifest);
 
     demoAppV1.node.addDependency(demoNamespace);
     demoAppV2.node.addDependency(demoNamespace);
 
-    // Deploy traffic routing manifests
     const destinationRule = cluster.addManifest('DestinationRule', ...destinationRuleManifest);
     const virtualService = cluster.addManifest('VirtualService', ...virtualServiceManifest);
     const gateway = cluster.addManifest('Gateway', ...gatewayManifest);
