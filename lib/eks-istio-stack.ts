@@ -26,10 +26,6 @@ export class EksIstioStack extends Stack {
       kubectlLayer: kubectlLayer,
     });
 
-    cluster.awsAuth.addRoleMapping(adminRole, {
-        groups: ['system:masters']
-      })
-
     const istioNamespace = cluster.addManifest('IstioNamespace', {
       apiVersion: 'v1',
       kind: 'Namespace',
