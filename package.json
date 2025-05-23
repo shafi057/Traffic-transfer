@@ -19,12 +19,9 @@
     "typescript": "^5.3.3"
   },
   "dependencies": {
-    "@aws-cdk/aws-eks": "^1.19.0",
-    "@aws-cdk/aws-iam": "^1.19.0",
-    "@aws-cdk/core": "^1.19.0",
     "@aws-cdk/lambda-layer-kubectl-v28": "^2.1.0",
     "aws-cdk-lib": "^2.140.0",
     "constructs": "^10.3.0",
-    "js-yaml": "^4.1.0"
+    "yaml": "^2.8.0"
   }
 }

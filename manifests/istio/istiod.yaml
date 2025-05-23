@@ -1,0 +1,25 @@
+apiVersion: install.istio.io/v1alpha1
+kind: IstioOperator
+metadata:
+  namespace: istio-system
+spec:
+  components:
+    base:
+      enabled: false
+    egressGateways:
+    - enabled: false
+      name: istio-egressgateway
+    ingressGateways:
+      enabled: false
+    pilot:
+      enabled: true
+  hub: docker.io/istio
+  tag: 1.22.0
+  values:
+    defaultRevision: ""
+    gateways:
+      istio-egressgateway: {}
+      istio-ingressgateway: {}
+    global:
+      configValidation: true
+      istioNamespace: istio-system
