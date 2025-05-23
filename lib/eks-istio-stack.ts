@@ -60,11 +60,7 @@ export class EksIstioStack extends Stack {
     const manifestsDir = path.join(__dirname, '..', 'manifests');
     const istioDir = path.join(manifestsDir, 'istio');
 
-    const istioFiles = [
-      'istio-base.yaml',    
-      'istiod.yaml',        
-      'istio-ingress.yaml'  
-    ];
+    const istioFiles = ['istio-base.yaml', 'istiod.yaml', 'istio-ingress.yaml'];
 
     const appFiles = [
       'destination-rule.yaml',
