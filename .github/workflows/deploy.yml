@@ -31,22 +31,6 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Configure kubectl for EKS
-        run: aws eks update-kubeconfig --name EksCluster --region us-east-1
-
-      - name: Download and install istioctl
-        run: |
-          ISTIO_VERSION=1.22.0
-          curl -L https://istio.io/downloadIstio | ISTIO_VERSION=$ISTIO_VERSION sh -
-          sudo mv istio-$ISTIO_VERSION/bin/istioctl /usr/local/bin/
-          istioctl version
-
-      - name: Install Istio CRDs
-        run: istioctl install --set profile=default --set components.operator.enabled=true --skip-confirmation
-
-      - name: Apply IstioOperator manifest
-        run: istioctl install -f ./path/to/istio-operator.yaml --skip-confirmation
-
       - name: Bootstrap CDK (if needed)
         run: cdk bootstrap
 
