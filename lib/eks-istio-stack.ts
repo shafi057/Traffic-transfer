@@ -62,13 +62,7 @@ export class EksIstioStack extends Stack {
 
     const istioFiles = ['istio-base.yaml', 'istiod.yaml', 'istio-ingress.yaml'];
 
-    const appFiles = [
-      'destination-rule.yaml',
-      'virtual-service.yaml',
-      'gateway.yaml',
-      'demo-v1.yaml',
-      'demo-v2.yaml'
-    ];
+    const appFiles = ['destination-rule.yaml','virtual-service.yaml','gateway.yaml','demo-v1.yaml','demo-v2.yaml'];
 
     const loadResources = (dir: string, files: string[]) =>
       files.flatMap(file =>
