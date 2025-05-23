@@ -25,6 +25,17 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
 
+      - name: Setup kubectl
+        uses: actions/setup-kubectl@v1
+        with:
+          version: 'latest'
+
+      - name: Configure kubeconfig
+        env:
+          KUBECONFIG_DATA: ${{ secrets.KUBECONFIG_DATA }}  
+        run: |
+          echo "$KUBECONFIG_DATA" | base64 --decode > $HOME/.kube/config
+
       - name: Install Istio CRDs
         run: |
           kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-1.22/manifests/crd.yaml
