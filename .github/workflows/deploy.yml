@@ -31,18 +31,6 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Setup kubectl
-        uses: azure/setup-kubectl@v3
-        with:
-          version: 'latest'
-
-      - name: Configure kubeconfig
-        run: |
-          aws eks update-kubeconfig --name EksCluster --region us-east-1
-
-      - name: Apply IstioOperator CRD manually
-        run: kubectl apply -f path/to/istio-operator-crd.yaml
-
       - name: Bootstrap CDK (if needed)
         run: cdk bootstrap
 
