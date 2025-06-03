@@ -104,7 +104,6 @@ export class EksIstioStack extends Stack {
       );
 
     const appResources = loadResources(manifestsDir, appFiles);
-
     const allApp = cluster.addManifest('AppResources', ...appResources);
     allApp.node.addDependency(istioNamespace);
     allApp.node.addDependency(demoNamespace);
