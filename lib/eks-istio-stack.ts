@@ -33,7 +33,7 @@ export class EksIstioStack extends Stack {
     const nodegroup = cluster.addNodegroupCapacity('NodeGroup', {
       desiredSize: 2,
       instanceTypes: [new ec2.InstanceType('t3.medium')],
-      remoteAccess: { sshKeyName: 'demo' }, 
+      remoteAccess: { sshKeyName: 'demonamespaceistio' }, 
     });
 
     nodegroup.role.addManagedPolicy(
